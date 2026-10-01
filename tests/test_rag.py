@@ -401,8 +401,8 @@ class AnswerFailureHttpTests(unittest.TestCase):
 class FactoryTests(unittest.TestCase):
     def test_production_factory_names_minilm(self):
         with mock.patch(
-            "chromadb.utils.embedding_functions.SentenceTransformerEmbeddingFunction"
+            "chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2"
         ) as constructor:
             constructor.return_value = object()
             create_embedding_function()
-        constructor.assert_called_once_with(model_name="all-MiniLM-L6-v2")
+        constructor.assert_called_once_with()

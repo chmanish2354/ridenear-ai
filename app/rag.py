@@ -17,9 +17,11 @@ AnswerFn = Callable[[str, list[str]], str]
 
 
 def create_embedding_function():
-    from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+    # ONNX MiniLM is the same model as all-MiniLM-L6-v2 without the PyTorch runtime,
+    # so the free host (512 MB) can load the index.
+    from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 
-    return SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+    return ONNXMiniLM_L6_V2()
 
 
 def passes_score_gate(best_score: float, min_score: float) -> bool:

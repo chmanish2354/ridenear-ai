@@ -336,13 +336,33 @@ class AnswerFailureHttpTests(unittest.TestCase):
         self.assertEqual(response.json()["detail"], "Answer model unavailable")
         self.assertNotIn("full tank", response.text)
 
-    def test_missing_api_key_is_unavailable(self):
+    def test_missing_api_key_uses_excerpts(self):
         with mock.patch.dict(
             os.environ,
             {"LLM_BASE_URL": "http://llm.internal/v1", "LLM_API_KEY": ""},
         ):
             response = self._query()
-        self._assert_unavailable(response)
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body["grounded"])
+        self.assertIn("full tank", body["answer"])
+        self.assertGreaterEqual(len(body["citations"]), 1)
+
+    def test_rejected_key_uses_excerpts(self):
+        class Response:
+            status_code = 401
+
+            def json(self):
+                return {"error": "invalid key"}
+
+        with mock.patch.dict(
+            os.environ,
+            {"LLM_BASE_URL": "http://llm.internal/v1", "LLM_API_KEY": "sentinel-llm-key"},
+        ):
+            with mock.patch("app.rag.httpx.post", return_value=Response()):
+                response = self._query()
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("full tank", response.json()["answer"])
 
     def test_transport_error_is_unavailable(self):
         def post(*_args, **_kwargs):

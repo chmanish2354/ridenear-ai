@@ -152,12 +152,16 @@ def compose_answer(
     return {"answer": prose, "citations": citations, "grounded": True}
 
 
+def excerpt_answer(excerpts: list[str]) -> str:
+    return "\n\n".join(excerpt.strip() for excerpt in excerpts if excerpt.strip())
+
+
 def complete_answer(query: str, excerpts: list[str]) -> str:
     base = os.environ.get("LLM_BASE_URL", "").rstrip("/")
-    api_key = os.environ.get("LLM_API_KEY", "")
+    api_key = os.environ.get("LLM_API_KEY", "").strip()
     model = os.environ.get("LLM_MODEL") or "gpt-4o-mini"
     if not base or not api_key:
-        raise HTTPException(status_code=502, detail="Answer model unavailable")
+        return excerpt_answer(excerpts)
 
     payload = {
         "model": model,
@@ -189,6 +193,8 @@ def complete_answer(query: str, excerpts: list[str]) -> str:
         )
     except httpx.HTTPError as exc:
         raise HTTPException(status_code=502, detail="Answer model unavailable") from exc
+    if response.status_code in (401, 403):
+        return excerpt_answer(excerpts)
     if response.status_code != 200:
         raise HTTPException(status_code=502, detail="Answer model unavailable")
     try:
